@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+      "target": "ESNext",
+      "module": "commonjs",
+      "outDir": "./dist",
+      "strict": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true
+    },
+    "include": ["assets/index.ts"], // Указываем путь к исходным файлам
+    "exclude": ["node_modules", "dist"] // Добавьте node_modules для исключения
+  }
