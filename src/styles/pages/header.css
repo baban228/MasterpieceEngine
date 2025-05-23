@@ -1,48 +1,104 @@
+/* src/styles/index.css */
 .header {
   background-color: white;
   box-shadow: var(--shadow-sm);
   margin-bottom: 0.5rem;
+}
 
-  &__nav {
-    margin-inline: auto;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem;
+.header__nav {
+  margin-inline: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+}
+
+.header__nav-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.header__link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border-radius: 0.375rem;
+  transition: all 200ms;
+  color: var(--color-gray-700);
+
+  &:hover {
+    background-color: var(--color-gray-100);
   }
 
-  &__nav-group {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
+  &--active {
+    background-color: var(--color-gray-200);
   }
 
-  &__link {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    font-size: var(--text-sm);
-    font-weight: 500;
-    border-radius: 0.375rem;
-    transition: all 200ms;
-    color: var(--color-gray-700);
+  &--round {
+    padding: 0.5rem;
+    border-radius: 9999px;
+  }
 
-    &:hover {
-      background-color: var(--color-gray-100);
-    }
+  svg {
+    flex-shrink: 0;
+  }
+}
 
-    &--active {
-      background-color: var(--color-gray-200);
-    }
+.header__user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  cursor: pointer;
+}
 
-    &--round {
-      padding: 0.5rem;
-      border-radius: 9999px;
-    }
+.header__user-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  background-color: var(--color-gray-300);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--color-gray-700);
+  font-size: 1rem;
+}
 
-    svg {
-      flex-shrink: 0;
-    }
+.header__user-name {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-gray-700);
+}
+
+.header__user-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background-color: white;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 0.375rem;
+  box-shadow: var(--shadow-sm);
+  z-index: 10;
+}
+
+.header__logout-button {
+  background-color: transparent;
+  border: none;
+  color: var(--color-gray-700);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  width: 100%;
+  text-align: left;
+  transition: color 200ms;
+
+  &:hover {
+    color: var(--color-primary-500);
+    background-color: var(--color-gray-100);
   }
 }

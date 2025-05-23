@@ -2,6 +2,27 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow-x: hidden;
+
+  &--has-background {
+    .page-shell__main {
+      position: relative;
+      z-index: 1;
+      background: transparent;
+    }
+
+    .drawing-board--background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.15;
+    }
+  }
 
   &__main {
     flex: 1;
@@ -11,6 +32,7 @@
     gap: 2rem;
     padding: 4rem 2rem 2rem;
     position: relative;
+    z-index: 1;
     
     /* Content areas */
     & > * {
@@ -20,6 +42,8 @@
       background: white;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      position: relative;
+      z-index: 2;
     }
     
     /* When drawing board is visible */
@@ -30,5 +54,43 @@
         grid-column: 3 / 4; /* Right side */
       }
     }
+
+    &--has-background {
+      & .drawing-board--background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 0;
+        pointer-events: none;
+        background: none;
+        padding: 0;
+        border-radius: 0;
+        box-shadow: none;
+        opacity: 0.3;
+
+        .drawing-board__tools {
+          display: none;
+        }
+
+        .drawing-board__canvas-container {
+          border: none;
+          background: none;
+          box-shadow: none;
+        }
+
+        .drawing-board__canvas {
+          opacity: 0.1;
+        }
+      }
+    }
+  }
+
+  /* Header should always be on top */
+  .header {
+    position: relative;
+    z-index: 3;
+    background: white;
   }
 }

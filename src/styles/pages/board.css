@@ -4,6 +4,8 @@
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
 
   &__header {
     display: flex;
@@ -16,11 +18,13 @@
     display: flex;
     align-items: center;
     gap: 1rem;
+    width: 100%;
 
     h1 {
       font-size: 2rem;
       font-weight: 600;
       margin: 0;
+      flex: 1;
     }
   }
 
@@ -38,6 +42,22 @@
     gap: 1rem;
   }
 
+  &__back-btn {
+    padding: 0.5rem 1rem;
+    background-color: var(--color-gray-100);
+    border: 1px solid var(--color-gray-200);
+    border-radius: 0.375rem;
+    font-weight: 500;
+    color: var(--color-gray-600);
+    cursor: pointer;
+    transition: all 200ms;
+
+    &:hover {
+      background-color: var(--color-gray-200);
+      color: var(--color-gray-700);
+    }
+  }
+
   &__save-btn {
     padding: 0.5rem 1.5rem;
     background-color: var(--color-primary);
@@ -50,6 +70,32 @@
 
     &:hover {
       background-color: var(--color-primary-dark);
+      transform: translateY(-1px);
+    }
+  }
+
+  &__active-btn {
+    padding: 0.5rem 1.5rem;
+    background-color: var(--color-gray-100);
+    color: var(--color-gray-600);
+    border: 1px solid var(--color-gray-200);
+    border-radius: 0.375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 200ms;
+
+    &:hover {
+      background-color: var(--color-gray-200);
+    }
+
+    &--active {
+      background-color: var(--color-primary);
+      color: white;
+      border: none;
+
+      &:hover {
+        background-color: var(--color-primary-dark);
+      }
     }
   }
 
@@ -59,6 +105,50 @@
     margin-bottom: 1.5rem;
     color: var(--color-gray-600);
   }
+
+  &__description {
+    background-color: var(--color-gray-50);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    margin-top: 1.5rem;
+
+    p {
+      margin-bottom: 1rem;
+      line-height: 1.5;
+    }
+  }
+
+  &__loading {
+    padding: 2rem;
+    text-align: center;
+    font-size: 1.25rem;
+    color: var(--color-gray-600);
+  }
+
+  &__error {
+    padding: 2rem;
+    text-align: center;
+
+    h2 {
+      color: #ef4444;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    p {
+      color: var(--color-gray-600);
+      margin-bottom: 1.5rem;
+    }
+  }
+
+  &__error-message {
+    background-color: #fee2e2;
+    border: 1px solid #ef4444;
+    color: #b91c1c;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+  }
 }
 
 .board {
@@ -66,10 +156,6 @@
   flex-direction: column;
   gap: 1rem;
   padding: 1rem;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
   background-color: var(--color-gray-50);
 
   &__tools {

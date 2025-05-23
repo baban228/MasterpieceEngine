@@ -1,9 +1,12 @@
+// src/routes.tsx
 import React from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import PageShell from './components/layout/PageShell';
 import Home from './pages/Home';
 import Board from './pages/Board';
 import Boards from './pages/Boards';
+import Register from './pages/Register';
+import Login from './pages/Login';
 
 export const router = createBrowserRouter([
   {
@@ -12,10 +15,11 @@ export const router = createBrowserRouter([
       { path: '/', element: <Home /> },
       { path: '/boards', element: <Boards /> },
       { path: '/board/:id', element: <Board /> },
-      /*{ path: '/users', element: <Users /> },
-      { path: '/user/:id', element: <User /> },
-      { path: '/auth', element: <Auth /> }*/
+      // { path: '/users', element: <Users /> },
+      // { path: '/user/:id', element: <User /> },
+      { path: '/login', element: <Login /> },
+      { path: '/register', element: <Register /> }
     ]
   },
-  //{ path: '/auth', element: <Auth /> } // do not touth
+  // { path: '/auth', element: <Auth /> } // do not touch
 ]);

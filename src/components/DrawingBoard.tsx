@@ -4,6 +4,7 @@ interface DrawingBoardProps {
   isVisible: boolean;
   onSave?: (content: string) => void;
   initialContent?: string;
+  isBackground?: boolean;
 }
 
 interface Point {
@@ -11,83 +12,103 @@ interface Point {
   y: number;
 }
 
-const DrawingBoard: React.FC<DrawingBoardProps> = ({ isVisible, onSave, initialContent }) => {
+const DrawingBoard: React.FC<DrawingBoardProps> = ({ 
+  isVisible, 
+  onSave, 
+  initialContent,
+  isBackground = false 
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [color, setColor] = useState('#000000');
   const [lineWidth, setLineWidth] = useState(2);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
   const [lastPoint, setLastPoint] = useState<Point | null>(null);
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<Point | null>(null);
 
-  // Initialize context when component mounts or isVisible changes
   useEffect(() => {
-    console.log('Effect running, isVisible:', isVisible);
     if (!isVisible) return;
 
     const canvas = canvasRef.current;
-    console.log('Canvas ref:', canvas);
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
-    console.log('Got context:', ctx);
     if (!ctx) return;
 
     const resizeCanvas = () => {
-      console.log('Resizing canvas');
-      const rect = canvas.getBoundingClientRect();
+      if (!containerRef.current) return;
       
-      // Set display size
-      canvas.style.width = '100%';
-      canvas.style.height = '100%';
+      const container = containerRef.current;
+      const rect = container.getBoundingClientRect();
       
-      // Set actual size in memory
+      // Set canvas size to match container
       canvas.width = rect.width;
       canvas.height = rect.height;
       
       // Configure context
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
+      
+      // Reset transform and clear
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Apply current transform
+      ctx.setTransform(scale, 0, 0, scale, offset.x, offset.y);
 
-      // Reload content after resize
+      // Reload content
       if (initialContent) {
         loadContent(initialContent);
       }
     };
 
-    // Initial resize
     resizeCanvas();
     
-    // Set up resize observer
-    const observer = new ResizeObserver(() => {
-      console.log('Resize observed');
-      resizeCanvas();
-    });
-    observer.observe(canvas);
+    const observer = new ResizeObserver(resizeCanvas);
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
 
-    // Set context in state
     setContext(ctx);
-    console.log('Context set in state:', ctx);
 
     return () => {
-      console.log('Cleanup: removing observer');
       observer.disconnect();
-      setContext(null); // Clear context on cleanup
+      setContext(null);
     };
-  }, [isVisible, initialContent]);
-
-  // Load initial content if provided
-  useEffect(() => {
-    if (initialContent && context && canvasRef.current) {
-      loadContent(initialContent);
-    }
-  }, [initialContent, context]);
-
+  }, [isVisible, initialContent, scale, offset]);
   const loadContent = (content: string) => {
     if (!context || !canvasRef.current) return;
+    if (!content) {
+      clearCanvas();
+      return;
+    }
+    
     const img = new Image();
     img.onload = () => {
-      context.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height);
-      context.drawImage(img, 0, 0);
+      if (!context || !canvasRef.current) return;
+      
+      // Clear with current transform
+      context.save();
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      context.restore();
+      
+      // Draw image with current transform
+      context.drawImage(
+        img,
+        0,
+        0,
+        canvasRef.current.width,
+        canvasRef.current.height
+      );
+    };
+    img.onerror = () => {
+      console.error('Failed to load image content');
+      clearCanvas();
     };
     img.src = content;
   };
@@ -98,31 +119,67 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isVisible, onSave, initialC
     onSave(content);
   };
 
-  const getMousePos = (e: React.MouseEvent<HTMLCanvasElement>): Point => {
+  const getCanvasPoint = (clientX: number, clientY: number): Point => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
 
     const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+    const x = (clientX - rect.left - offset.x) / scale;
+    const y = (clientY - rect.top - offset.y) / scale;
 
-    return {
-      x: ((e.clientX - rect.left) * (canvas.width / rect.width)) / dpr,
-      y: ((e.clientY - rect.top) * (canvas.height / rect.height)) / dpr
-    };
+    return { x, y };
+  };
+
+  const getMousePos = (e: React.MouseEvent<HTMLCanvasElement>): Point => {
+    return getCanvasPoint(e.clientX, e.clientY);
   };
 
   const getTouchPos = (e: React.TouchEvent<HTMLCanvasElement>): Point => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-
-    const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
     const touch = e.touches[0];
+    return getCanvasPoint(touch.clientX, touch.clientY);
+  };
 
-    return {
-      x: ((touch.clientX - rect.left) * (canvas.width / rect.width)) / dpr,
-      y: ((touch.clientY - rect.top) * (canvas.height / rect.height)) / dpr
-    };
+  const startDragging = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!e.altKey) return;
+    e.preventDefault();
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+  };
+
+  const handleDrag = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDragging || !dragStart) return;
+    e.preventDefault();
+    setOffset({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    });
+  };
+
+  const stopDragging = () => {
+    setIsDragging(false);
+    setDragStart(null);
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (e.ctrlKey) {
+      e.preventDefault();
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const delta = e.deltaY > 0 ? 0.9 : 1.1;
+      const newScale = Math.min(Math.max(scale * delta, 0.1), 5);
+
+      // Adjust offset to zoom towards mouse position
+      const scaleChange = newScale - scale;
+      setOffset(prev => ({
+        x: prev.x - mouseX * scaleChange,
+        y: prev.y - mouseY * scaleChange
+      }));
+      setScale(newScale);
+    }
   };
 
   const configureContext = () => {
@@ -133,15 +190,11 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isVisible, onSave, initialC
     context.lineCap = 'round';
     context.lineJoin = 'round';
   };
+
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    console.log('Start drawing called, context:', context, 'canvas:', canvasRef.current);
-    if (!context || !canvasRef.current) {
-      console.log('Missing context or canvas');
-      return;
-    }
+    if (!context || !canvasRef.current) return;
     
     e.preventDefault();
-    console.log('Starting to draw');
     
     const pos = 'touches' in e ? getTouchPos(e) : getMousePos(e);
     setIsDrawing(true);
@@ -184,51 +237,83 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isVisible, onSave, initialC
     context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
   };
 
+  const zoomIn = () => setScale(prev => Math.min(prev * 1.2, 5));
+  const zoomOut = () => setScale(prev => Math.max(prev * 0.8, 0.1));
+  const resetZoom = () => {
+    setScale(1);
+    setOffset({ x: 0, y: 0 });
+  };
+
   if (!isVisible) return null;
 
   return (
-    <div className="drawing-board">
-      <div className="drawing-board__tools">
-        <input
-          type="color"
-          value={color}
-          onChange={(e) => setColor(e.target.value)}
-          className="drawing-board__color-picker"
-        />
-        <input
-          type="range"
-          min="1"
-          max="20"
-          value={lineWidth}
-          onChange={(e) => setLineWidth(Number(e.target.value))}
-          className="drawing-board__line-width"
-        />
-        <button 
-          className="drawing-board__clear-btn"
-          onClick={clearCanvas}
-        >
-          Clear
-        </button>
-        {onSave && (
-          <button 
-            className="drawing-board__save-btn"
-            onClick={saveContent}
-          >
-            Save
+    <div className={`drawing-board ${isBackground ? 'drawing-board--background' : ''}`}>
+      {!isBackground && (
+        <div className="drawing-board__tools">
+          <input
+            type="color"
+            value={color}
+            onChange={(e) => setColor(e.target.value)}
+            className="drawing-board__color-picker"
+          />
+          <input
+            type="range"
+            min="1"
+            max="20"
+            value={lineWidth}
+            onChange={(e) => setLineWidth(Number(e.target.value))}
+            className="drawing-board__line-width"
+          />
+          <div className="drawing-board__scale-controls">
+            <button 
+              className="drawing-board__scale-btn" 
+              onClick={zoomOut}
+            >
+              -
+            </button>            <button 
+              className="drawing-board__scale-btn" 
+              onClick={resetZoom}
+            >
+              {Math.round(scale * 100)}%
+            </button>
+            <button 
+              className="drawing-board__scale-btn" 
+              onClick={zoomIn}
+            >
+              +
+            </button>
+          </div>
+          <button className="drawing-board__clear-btn" onClick={clearCanvas}>
+            Clear
           </button>
-        )}
+          {onSave && (
+            <button className="drawing-board__save-btn" onClick={saveContent}>
+              Save
+            </button>
+          )}
+        </div>
+      )}
+      <div 
+        ref={containerRef}
+        className="drawing-board__canvas-container"
+        onWheel={handleWheel}
+      >
+        <canvas
+          ref={canvasRef}
+          className="drawing-board__canvas"
+          style={{
+            transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+            transformOrigin: '0 0'
+          }}
+          onMouseDown={(e) => e.altKey ? startDragging(e) : startDrawing(e)}
+          onMouseMove={(e) => isDragging ? handleDrag(e) : draw(e)}
+          onMouseUp={() => isDragging ? stopDragging() : stopDrawing()}
+          onMouseLeave={() => isDragging ? stopDragging() : stopDrawing()}
+          onTouchStart={startDrawing}
+          onTouchMove={draw}
+          onTouchEnd={stopDrawing}
+        />
       </div>
-      <canvas
-        ref={canvasRef}
-        className="drawing-board__canvas"
-        onMouseDown={startDrawing}
-        onMouseMove={draw}
-        onMouseUp={stopDrawing}
-        onMouseLeave={stopDrawing}
-        onTouchStart={startDrawing}
-        onTouchMove={draw}
-        onTouchEnd={stopDrawing}
-      />
     </div>
   );
 };

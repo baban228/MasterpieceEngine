@@ -1,15 +1,34 @@
-﻿import React, { useEffect, useCallback } from "react";
-import { useParams, useOutletContext, Navigate } from "react-router-dom";
+﻿import React, { useEffect, useCallback, useState } from "react";
+import { useParams, useOutletContext, Navigate, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Board as BoardType, createNewBoard, getBoard, updateBoard, saveDrawing } from "../services/boardService";
 import type { PageShellContext } from "../components/layout/PageShell";
 
 const Board: React.FC = () => {
   const { id } = useParams();
-  const { setIsDrawingVisible, setDrawingContent, setOnSaveDrawing } = useOutletContext<PageShellContext>();
+  const navigate = useNavigate();
+  const [error, setError] = useState<string>();
+  const { 
+    setIsDrawingVisible, 
+    setDrawingContent, 
+    setOnSaveDrawing, 
+    setActiveBoard,
+    activeBoard
+  } = useOutletContext<PageShellContext>();
   const queryClient = useQueryClient();
 
-  const { data: board, isLoading, error } = useQuery({
+  // Clean up on component unmount or when active board changes
+  useEffect(() => {
+    return () => {
+      if (!activeBoard || activeBoard !== id) {
+        setIsDrawingVisible(false);
+        setDrawingContent(undefined);
+        setOnSaveDrawing(undefined);
+      }
+    };
+  }, [setIsDrawingVisible, setDrawingContent, setOnSaveDrawing, activeBoard, id]);
+
+  const { data: board, isLoading, isError } = useQuery({
     queryKey: ["board", id],
     queryFn: async () => {
       try {
@@ -18,13 +37,16 @@ const Board: React.FC = () => {
           queryClient.invalidateQueries({ queryKey: ["boards"] });
           return newBoard;
         }
-        return getBoard(id!);
+        const board = await getBoard(id!);
+        if (!board) throw new Error('Board not found');
+        return board;
       } catch (error) {
-        console.error('Failed to load board:', error);
+        setError(error instanceof Error ? error.message : 'Failed to load board');
         throw error;
       }
     },
-    enabled: !!id
+    enabled: !!id,
+    retry: false
   });
 
   const updateBoardMutation = useMutation({
@@ -34,8 +56,7 @@ const Board: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["boards"] });
     },
     onError: (error) => {
-      console.error('Failed to update board:', error);
-      alert('Failed to update board. Please try again.');
+      setError(error instanceof Error ? error.message : 'Failed to update board');
     }
   });
 
@@ -45,58 +66,108 @@ const Board: React.FC = () => {
     onSuccess: (updatedBoard) => {
       queryClient.setQueryData(["board", updatedBoard.id], updatedBoard);
       queryClient.invalidateQueries({ queryKey: ["boards"] });
+      // Update the drawing content in PageShell
+      if (updatedBoard.content) {
+        setDrawingContent(updatedBoard.content);
+      }
     },
     onError: (error) => {
-      console.error('Failed to save drawing:', error);
-      alert('Failed to save drawing. Please try again.');
+      setError(error instanceof Error ? error.message : 'Failed to save drawing');
     }
   });
 
   const handleSave = useCallback(async (content: string) => {
     if (!board) return;
-    await saveDrawingMutation.mutateAsync({ boardId: board.id, content });
+    setError(undefined);
+    try {
+      await saveDrawingMutation.mutateAsync({ boardId: board.id, content });
+    } catch (error) {
+      console.error('Save failed:', error);
+    }
   }, [board, saveDrawingMutation]);
 
+  // Set up drawing visibility and handlers
   useEffect(() => {
+    if (!board) return;
+    
     setIsDrawingVisible(true);
-    if (board?.content) {
+    if (board.content) {
       setDrawingContent(board.content);
     }
     setOnSaveDrawing(handleSave);
-    
-    return () => {
-      setIsDrawingVisible(false);
-      setDrawingContent(undefined);
-      setOnSaveDrawing(undefined);
-    };
   }, [setIsDrawingVisible, setDrawingContent, setOnSaveDrawing, board, handleSave]);
 
-  if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error loading board: {error.toString()}</div>;
-  if (!board) return <Navigate to="/boards" replace />;
+  if (isLoading) return <div className="board-page__loading">Loading...</div>;
+  if (isError || !board) return (
+    <div className="board-page__error">
+      <h2>Error</h2>
+      <p>{error || 'Board not found'}</p>
+      <button 
+        className="board-page__back-btn" 
+        onClick={() => navigate('/boards')}
+      >
+        Back to Boards
+      </button>
+    </div>
+  );
+
+  const handleBack = () => {
+    setIsDrawingVisible(false);
+    setDrawingContent(undefined);
+    setOnSaveDrawing(undefined);
+    navigate('/boards');
+  };
 
   const handleUpdateBoard = async (updates: Partial<BoardType>) => {
-    try {
-      await updateBoardMutation.mutateAsync({ ...board, ...updates });
-    } catch (error) {
-      console.error('Failed to update:', error);
+    setError(undefined);
+    await updateBoardMutation.mutateAsync({ ...board, ...updates });
+  };
+
+  const toggleActiveBoard = () => {
+    if (activeBoard === board.id) {
+      setActiveBoard(null);
+    } else {
+      setActiveBoard(board.id);
+      // Set the content for the background board
+      if (board.content) {
+        setDrawingContent(board.content);
+      }
     }
   };
 
   return (
     <div className="board-page">
+      {error && (
+        <div className="board-page__error-message">
+          {error}
+        </div>
+      )}
       <div className="board-page__header">
         <div className="board-page__title">
-          <h1>{board.name}</h1>
           <button 
-            className="board-page__save-btn"
-            onClick={() => {
-              const newName = prompt('Enter new name:', board.name);
-              if (newName) handleUpdateBoard({ name: newName });
-            }}
+            className="board-page__back-btn" 
+            onClick={handleBack}
           >
-            Rename
+            Back to Boards
           </button>
+          <h1>{board.name}</h1>
+          <div className="board-page__actions">
+            <button 
+              className="board-page__save-btn"
+              onClick={() => {
+                const newName = prompt('Enter new name:', board.name);
+                if (newName) handleUpdateBoard({ name: newName });
+              }}
+            >
+              Rename
+            </button>
+            <button 
+              className={`board-page__active-btn ${activeBoard === board.id ? 'board-page__active-btn--active' : ''}`}
+              onClick={toggleActiveBoard}
+            >
+              {activeBoard === board.id ? 'Remove as Active' : 'Set as Active'}
+            </button>
+          </div>
         </div>
       </div>
       <div className="board-page__info">
