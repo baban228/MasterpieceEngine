@@ -5,21 +5,19 @@ import { Home, Layout, Users, LogIn, User } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
 
 const Header: React.FC = () => {
-  const { user, logout } = useUser();
+  const { user } = useUser();
   const navigate = useNavigate();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleAvatarClick = () => {
+    if (user) {
+      navigate(`/user/${user.id}`);
+    }
   };
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
-
-  const closeMenu = () => {
-    setIsMenuOpen(false);
+  const handleNameClick = () => {
+    if (user) {
+      navigate(`/user/${user.id}`);
+    }
   };
 
   return (
@@ -57,28 +55,27 @@ const Header: React.FC = () => {
             <span>Users</span>
           </NavLink>
           {user ? (
-            <div className="header__user-info" onClick={toggleMenu}>
-              <User size={20} />
-              <span>{user.name}</span>
-              {isMenuOpen && (
-                <div className="header__user-menu">
-                  <button onClick={handleLogout} className="header__logout-button">Logout</button>
-                </div>
-              )}
+            <div className="header__user-info">
+              <img 
+                src={user.avatar || 'https://via.placeholder.com/150 '} 
+                alt={`${user.name}'s avatar`} 
+                className="header__user-avatar" 
+                onClick={handleAvatarClick} 
+              />
+              <span className="header__user-name" onClick={handleNameClick}>
+                {user.name}
+              </span>
             </div>
           ) : (
-            <>
-              <NavLink 
-                to="/login" 
-                className={({ isActive }) => 
-                  `header__link${isActive ? ' header__link--active' : ''}`
-                }
-                onClick={closeMenu}
-              >
-                <LogIn size={20} />
-                <span>Sign In</span>
-              </NavLink>
-            </>
+            <NavLink 
+              to="/login" 
+              className={({ isActive }) => 
+                `header__link${isActive ? ' header__link--active' : ''}`
+              }
+            >
+              <LogIn size={20} />
+              <span>Sign In</span>
+            </NavLink>
           )}
         </div>
       </nav>

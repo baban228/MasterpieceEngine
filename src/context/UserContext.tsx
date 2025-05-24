@@ -5,11 +5,12 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  avatar?: string; // Добавляем поле для аватара
 }
 
 interface UserContextType {
   user: User | null;
-  login: (user: Omit<User, 'id'>) => void; // Функция принимает объект без id
+  login: (userData: Partial<User>) => void; // Обновляем тип login для частичного обновления пользователя
   logout: () => void;
 }
 
@@ -25,10 +26,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [userIdCounter, setUserIdCounter] = useState<number>(1); // Счётчик для генерации id
 
-  const login = (user: Omit<User, 'id'>) => {
-    const newUser: User = { ...user, id: userIdCounter }; // Генерация id
-    setUser(newUser);
-    setUserIdCounter(prevId => prevId + 1); // Увеличение счётчика
+  const login = (userData: Partial<User>) => {
+    if (user) {
+      setUser({ ...user, ...userData });
+    } else {
+      const newUser: User = { id: userIdCounter, ...userData } as User; // Генерация id
+      setUser(newUser);
+      setUserIdCounter(prevId => prevId + 1); // Увеличение счётчика
+    }
   };
 
   const logout = () => {

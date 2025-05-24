@@ -4,7 +4,7 @@
       "id": "1",
       "name": "Project Wireframe",
       "createdAt": "2024-03-15",
-      "lastModified": "2025-05-23T18:31:54.812Z",
+      "lastModified": "2025-05-24T12:28:30.121Z",
       "description": "Website layout mockup"
     },
     {
@@ -26,6 +26,13 @@
       "name": "Untitled Board",
       "createdAt": "2025-05-23T18:32:38.980Z",
       "lastModified": "2025-05-23T18:32:39.026Z",
+      "description": "New drawing board"
+    },
+    {
+      "id": "45034fac-2430-42ea-b353-9a540b006cb3",
+      "name": "Untitled Board",
+      "createdAt": "2025-05-24T12:32:06.477Z",
+      "lastModified": "2025-05-24T12:32:06.532Z",
       "description": "New drawing board"
     }
   ]

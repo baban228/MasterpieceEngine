@@ -8,6 +8,7 @@ import Boards from './pages/Boards';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import Users from './pages/Users';
+import User from './pages/User';
 
 export const router = createBrowserRouter([
   {
@@ -17,7 +18,7 @@ export const router = createBrowserRouter([
       { path: '/boards', element: <Boards /> },
       { path: '/board/:id', element: <Board /> },
       { path: '/users', element: <Users /> },
-      // { path: '/user/:id', element: <User /> },
+      { path: '/user/:id', element: <User /> },
       { path: '/login', element: <Login /> },
       { path: '/register', element: <Register /> }
     ]
