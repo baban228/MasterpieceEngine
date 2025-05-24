@@ -1,14 +1,15 @@
 // src/context/UserContext.tsx
 import React, { createContext, useContext, useState } from 'react';
 
-interface User {
+export interface User {
+  id: number;
   name: string;
   email: string;
 }
 
 interface UserContextType {
   user: User | null;
-  login: (user: User) => void;
+  login: (user: Omit<User, 'id'>) => void; // Функция принимает объект без id
   logout: () => void;
 }
 
@@ -22,9 +23,12 @@ export const useUser = () => useContext(UserContext);
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [userIdCounter, setUserIdCounter] = useState<number>(1); // Счётчик для генерации id
 
-  const login = (user: User) => {
-    setUser(user);
+  const login = (user: Omit<User, 'id'>) => {
+    const newUser: User = { ...user, id: userIdCounter }; // Генерация id
+    setUser(newUser);
+    setUserIdCounter(prevId => prevId + 1); // Увеличение счётчика
   };
 
   const logout = () => {
