@@ -1,10 +1,12 @@
 // src/pages/Users.tsx
 import React, { useState, useEffect } from 'react';
 import { useUser, User } from '../context/UserContext';
+import { useNavigate } from 'react-router-dom';
 import '../styles/pages/users.css'; // Импорт CSS файла
 
 const Users: React.FC = () => {
   const { user } = useUser();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
@@ -32,6 +34,10 @@ const Users: React.FC = () => {
   };
 
   const addFriend = (friend: User) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     if (!friends.some(f => f.id === friend.id)) {
       setFriends([...friends, friend]);
     }
